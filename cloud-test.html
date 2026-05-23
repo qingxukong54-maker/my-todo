@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Cloud API Test</title></head>
+<body>
+<h3>Cloud API Connectivity Test</h3>
+<pre id="log"></pre>
+<script>
+const log = document.getElementById('log');
+async function test() {
+  log.textContent += '1. Testing JSONBlob POST...\n';
+  try {
+    const r = await fetch('https://jsonblob.com/api/jsonBlob', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({hello: 'world'})
+    });
+    log.textContent += '   Status: ' + r.status + '\n';
+    const location = r.headers.get('Location');
+    log.textContent += '   Location: ' + location + '\n';
+    if (location) {
+      const blobId = location.split('/').pop();
+      log.textContent += '   Blob ID: ' + blobId + '\n';
+      log.textContent += '2. Testing GET...\n';
+      const r2 = await fetch('https://jsonblob.com/api/jsonBlob/' + blobId);
+      const data = await r2.json();
+      log.textContent += '   Data: ' + JSON.stringify(data) + '\n';
+      log.textContent += '3. Testing PUT...\n';
+      const r3 = await fetch('https://jsonblob.com/api/jsonBlob/' + blobId, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({updated: 'yes', data: [1,2,3]})
+      });
+      log.textContent += '   Status: ' + r3.status + '\n';
+      log.textContent += '\nALL TESTS PASSED! JSONBlob works in browser.\n';
+    }
+  } catch(e) {
+    log.textContent += '   ERROR: ' + e.message + '\n';
+    log.textContent += '   Name: ' + e.name + '\n';
+    log.textContent += '\nFAILED - CORS or network issue\n';
+  }
+}
+test();
+</script>
+</body>
+</html>
