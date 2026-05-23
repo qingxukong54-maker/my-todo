@@ -534,6 +534,8 @@ async function connectCloud(){
     document.getElementById('cloudBanner').classList.add('hidden');
     await cloudLoad();
     showSync('已连接 ✓', 3000);
+    // Start polling for sync
+    setInterval(()=>cloudLoad(true), 30000);
   }catch(e){
     console.error('Cloud connect error:', e);
     showSync('连接失败: '+e.message, 5000, true);
@@ -550,8 +552,9 @@ function disconnectCloud(){
 
 // Debounce cloud saves to avoid too many requests
 let cloudSaveTimer = null;
+let cloudLoading = false;
 function cloudSave(){
-  if(!cloudConfig) return;
+  if(!cloudConfig || cloudLoading) return;
   if(cloudSaveTimer) clearTimeout(cloudSaveTimer);
   cloudSaveTimer = setTimeout(async ()=>{
     try{
@@ -587,10 +590,11 @@ function cloudSave(){
   }, 1000);
 }
 
-async function cloudLoad(){
+async function cloudLoad(silent=false){
   if(!cloudConfig) return;
   try{
-    showSync('正在拉取...');
+    if(!silent) showSync('正在拉取...');
+    cloudLoading = true;
     const res = await fetch(GIST_API+'/'+cloudConfig.gistId, {
       headers: { 'Authorization': 'Bearer ' + cloudConfig.token }
     });
@@ -600,20 +604,28 @@ async function cloudLoad(){
       if(content){
         const json = JSON.parse(content);
         if(json && json.version===2){
-          if(json.tasks && json.tasks.length > 0){
+          const localJson = JSON.stringify(data);
+          const cloudJson = JSON.stringify(json);
+          if(localJson !== cloudJson){
             data = json;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
             renderAll();
+            if(!silent) showSync('已同步 ✓', 2000);
+          } else if(!silent){
+            showSync('已是最新 ✓', 2000);
           }
         }
       }
-      showSync('已拉取 ✓', 2000);
     } else {
-      showSync('拉取失败: HTTP '+res.status, 3000, true);
+      if(!silent) showSync('拉取失败: HTTP '+res.status, 3000, true);
     }
   }catch(e){
-    console.error('Cloud load error:', e);
-    showSync('拉取失败: '+e.message, 3000, true);
+    if(!silent) {
+      console.error('Cloud load error:', e);
+      showSync('拉取失败: '+e.message, 3000, true);
+    }
+  } finally {
+    cloudLoading = false;
   }
 }
 
@@ -631,6 +643,8 @@ try{ const c=localStorage.getItem(CLOUD_KEY); if(c){const p=JSON.parse(c);if((p.
 if(cloudConfig && cloudConfig.gistId) document.getElementById('cloudBanner').classList.add('hidden');
 // Auto load from cloud on start
 if(cloudConfig && cloudConfig.gistId) setTimeout(()=>cloudLoad(), 500);
+// Auto poll for changes every 30 seconds
+if(cloudConfig && cloudConfig.gistId) setInterval(()=>cloudLoad(true), 30000);
 
 // ===== SIDEBAR =====
 function renderSidebar(){
