@@ -442,7 +442,8 @@ function parseInputDate(text){
 }
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 
-// ===== CLOUD SYNC (JSONBlob.io - Free, no size limit, no registration) =====
+// ===== CLOUD SYNC (GitHub Gist - Free, reliable, CORS supported) =====
+const GIST_API = 'https://api.github.com/gists';
 let cloudConfig = null;
 try{ const c=localStorage.getItem(CLOUD_KEY); if(c) cloudConfig=JSON.parse(c); }catch(e){}
 
@@ -450,10 +451,10 @@ function showCloudSetupModal(){
   const existing = cloudConfig ? `
     <div style="margin-bottom:12px;padding:10px;background:var(--surface2);border-radius:var(--radius-sm);font-size:13px;">
       <div style="font-weight:600;margin-bottom:4px;color:var(--green);">✓ 云端同步已启用</div>
-      <div style="color:var(--text3);word-break:break-all;font-size:12px;margin-top:4px;">Blob ID: ${escHtml(cloudConfig.blobId)}</div>
+      <div style="color:var(--text3);word-break:break-all;font-size:12px;margin-top:4px;">Gist ID: ${escHtml(cloudConfig.gistId)}</div>
     </div>
     <p style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5;">
-      在其他设备上输入上方的 Blob ID 即可同步数据。
+      在其他设备上输入上方的 Gist ID 即可同步数据。
     </p>
     <div class="modal-actions" style="justify-content:space-between;">
       <button class="btn-cancel" style="color:var(--red);" onclick="disconnectCloud()">断开连接</button>
@@ -461,12 +462,17 @@ function showCloudSetupModal(){
     </div>
   ` : `
     <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;">
-      使用 <strong>JSONBlob.io</strong> 免费云端同步，无需注册。<br>
-      首次使用自动创建，之后输入相同的 Blob ID 即可在不同设备同步。
+      使用 <strong>GitHub Gist</strong> 云端同步，数据存在你的 GitHub 账号里。<br>
+      需要一个只勾选 gist 权限的 Personal Access Token。
+      <a href="https://github.com/settings/tokens/new?scopes=gist&description=MyTodo-Sync" target="_blank" style="color:var(--primary);">点击生成 Token</a>
     </p>
     <div style="margin-bottom:12px;">
-      <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px;">Blob ID（已有则填入，新用户留空自动创建）</label>
-      <input type="text" id="cloudBlobId" placeholder="留空自动创建" style="width:100%;font-size:13px;">
+      <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px;">GitHub Token</label>
+      <input type="password" id="cloudToken" placeholder="ghp_xxxxxxxxxxxx" style="width:100%;font-size:13px;">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px;">Gist ID（已有则填入，新用户留空自动创建）</label>
+      <input type="text" id="cloudGistId" placeholder="留空自动创建" style="width:100%;font-size:13px;">
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">取消</button>
@@ -479,33 +485,57 @@ function showCloudSetupModal(){
 }
 
 async function connectCloud(){
-  const blobId = document.getElementById('cloudBlobId')?.value.trim();
+  const token = document.getElementById('cloudToken')?.value.trim();
+  const gistId = document.getElementById('cloudGistId')?.value.trim();
+
+  if(!token){
+    showSync('请输入 Token', 3000, true);
+    return;
+  }
 
   showSync('正在连接...');
   try{
-    let finalBlobId = blobId;
-    if(!finalBlobId){
-      // Create a new blob
-      const res = await fetch('https://jsonblob.com/api/jsonBlob', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(data)
+    let finalGistId = gistId;
+    const headers = {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    };
+
+    if(!finalGistId){
+      // Create a new gist
+      const res = await fetch(GIST_API, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          description: 'MyTodo Cloud Sync Data',
+          public: false,
+          files: {
+            'todo-data.json': { content: JSON.stringify(data) }
+          }
+        })
       });
-      if(!res.ok) throw new Error('创建失败: '+res.status);
-      finalBlobId = res.headers.get('Location')?.split('/').pop();
-      if(!finalBlobId) throw new Error('未获取到 Blob ID');
+      if(!res.ok){
+        const err = await res.json().catch(()=>({}));
+        throw new Error(err.message || '创建失败: '+res.status);
+      }
+      const gist = await res.json();
+      finalGistId = gist.id;
     } else {
-      // Verify existing blob
-      const res = await fetch('https://jsonblob.com/api/jsonBlob/'+finalBlobId);
-      if(!res.ok) throw new Error('Blob 不存在或无权限');
+      // Verify existing gist
+      const res = await fetch(GIST_API+'/'+finalGistId, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if(!res.ok) throw new Error('Gist 不存在或 Token 无权限');
     }
-    cloudConfig = {blobId: finalBlobId};
+
+    cloudConfig = {token: token, gistId: finalGistId};
     localStorage.setItem(CLOUD_KEY, JSON.stringify(cloudConfig));
     closeModal();
     document.getElementById('cloudBanner').classList.add('hidden');
     await cloudLoad();
     showSync('已连接 ✓', 3000);
   }catch(e){
+    console.error('Cloud connect error:', e);
     showSync('连接失败: '+e.message, 5000, true);
   }
 }
@@ -525,15 +555,34 @@ function cloudSave(){
   if(cloudSaveTimer) clearTimeout(cloudSaveTimer);
   cloudSaveTimer = setTimeout(async ()=>{
     try{
-      const res = await fetch('https://jsonblob.com/api/jsonBlob/'+cloudConfig.blobId, {
-        method:'PUT',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(data)
+      // First GET current gist to get the file's SHA
+      const getRes = await fetch(GIST_API+'/'+cloudConfig.gistId, {
+        headers: { 'Authorization': 'Bearer ' + cloudConfig.token }
+      });
+      if(!getRes.ok) throw new Error('HTTP '+getRes.status);
+      const gist = await getRes.json();
+      const fileSha = gist.files?.['todo-data.json']?.sha || '';
+
+      const res = await fetch(GIST_API+'/'+cloudConfig.gistId, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': 'Bearer ' + cloudConfig.token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          files: {
+            'todo-data.json': {
+              content: JSON.stringify(data),
+              ...(fileSha ? { filename: 'todo-data.json' } : {})
+            }
+          }
+        })
       });
       if(res.ok) showSync('已同步 ✓', 2000);
-      else showSync('同步失败: '+res.status, 3000, true);
+      else showSync('同步失败: HTTP '+res.status, 3000, true);
     }catch(e){
-      showSync('同步失败: 网络错误', 3000, true);
+      console.error('Cloud save error:', e);
+      showSync('同步失败: '+e.message, 3000, true);
     }
   }, 1000);
 }
@@ -542,20 +591,29 @@ async function cloudLoad(){
   if(!cloudConfig) return;
   try{
     showSync('正在拉取...');
-    const res = await fetch('https://jsonblob.com/api/jsonBlob/'+cloudConfig.blobId);
+    const res = await fetch(GIST_API+'/'+cloudConfig.gistId, {
+      headers: { 'Authorization': 'Bearer ' + cloudConfig.token }
+    });
     if(res.ok){
-      const json = await res.json();
-      if(json && json.version===2){
-        // Merge: use cloud data as base, keep local if cloud is empty
-        if(json.tasks && json.tasks.length > 0){
-          data = json;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-          renderAll();
+      const gist = await res.json();
+      const content = gist.files?.['todo-data.json']?.content;
+      if(content){
+        const json = JSON.parse(content);
+        if(json && json.version===2){
+          if(json.tasks && json.tasks.length > 0){
+            data = json;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            renderAll();
+          }
         }
       }
+      showSync('已拉取 ✓', 2000);
+    } else {
+      showSync('拉取失败: HTTP '+res.status, 3000, true);
     }
   }catch(e){
-    showSync('拉取失败', 3000, true);
+    console.error('Cloud load error:', e);
+    showSync('拉取失败: '+e.message, 3000, true);
   }
 }
 
@@ -566,13 +624,13 @@ function showSync(msg, dur=2000, isError=false){
   if(dur) setTimeout(()=>{el.className='sync-indicator';el.innerHTML='';}, dur);
 }
 
-// Clear old JSONBin config (migration)
-try{ const c=localStorage.getItem(CLOUD_KEY); if(c){const p=JSON.parse(c);if(p.apiKey&&!p.blobId){localStorage.removeItem(CLOUD_KEY);cloudConfig=null;}} }catch(e){}
+// Clear old JSONBin/JSONBlob config (migration)
+try{ const c=localStorage.getItem(CLOUD_KEY); if(c){const p=JSON.parse(c);if((p.apiKey||p.blobId)&&!p.gistId){localStorage.removeItem(CLOUD_KEY);cloudConfig=null;}} }catch(e){}
 
 // Init cloud banner
-if(cloudConfig && cloudConfig.blobId) document.getElementById('cloudBanner').classList.add('hidden');
+if(cloudConfig && cloudConfig.gistId) document.getElementById('cloudBanner').classList.add('hidden');
 // Auto load from cloud on start
-if(cloudConfig && cloudConfig.blobId) setTimeout(()=>cloudLoad(), 500);
+if(cloudConfig && cloudConfig.gistId) setTimeout(()=>cloudLoad(), 500);
 
 // ===== SIDEBAR =====
 function renderSidebar(){
