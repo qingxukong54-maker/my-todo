@@ -67,11 +67,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
 .summary-card .stat{text-align:center;flex:1;}
 .summary-card .stat .s-label{font-size:11px;opacity:.7;margin-bottom:2px;}
 .summary-card .stat .s-val{font-size:16px;font-weight:700;}
-.summary-month{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;}
-.summary-month button{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text2);background:var(--surface);border:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
-.summary-month button:active{background:var(--primary);color:#fff;}
-.summary-month button:hover{background:var(--surface2);}
-.summary-month span{font-size:16px;font-weight:700;min-width:120px;text-align:center;}
+.summary-month{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;}
+.summary-month select{appearance:none;-webkit-appearance:none;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 28px 8px 12px;font-size:15px;font-weight:600;color:var(--text);cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;touch-action:manipulation;min-width:0;}
+.summary-month select:focus{border-color:var(--primary);outline:none;}
+.summary-month .month-label{font-size:14px;font-weight:500;color:var(--text2);}
 
 /* Sections */
 .section{background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow);}
@@ -205,6 +204,20 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
 .bottom-nav-item.active{color:var(--primary);}
 .bottom-nav-item .nav-icon{font-size:20px;}
 
+/* More Panel (Mobile) */
+.more-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:35;animation:fadeIn .2s;}
+.more-panel{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;z-index:36;padding:8px 0 calc(8px + var(--safe-b));animation:slideUp .3s ease;}
+.more-panel-header{padding:12px 20px 8px;display:flex;align-items:center;justify-content:space-between;}
+.more-panel-header h3{font-size:17px;font-weight:700;}
+.more-panel-close{font-size:20px;color:var(--text3);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.more-panel-close:active{background:var(--surface2);}
+.more-menu-item{display:flex;align-items:center;gap:14px;padding:14px 20px;cursor:pointer;font-size:15px;color:var(--text);transition:background .1s;}
+.more-menu-item:active{background:var(--surface2);}
+.more-menu-item .mmi-icon{font-size:20px;width:28px;text-align:center;}
+.more-menu-item .mmi-text{flex:1;}
+.more-menu-item .mmi-arrow{color:var(--text3);font-size:14px;}
+.more-menu-divider{height:1px;background:var(--border);margin:4px 20px;}
+
 /* Responsive */
 @media(max-width:768px){
   .sidebar{display:none;}
@@ -262,6 +275,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
     <div class="bottom-nav-item" data-page="stats" onclick="switchPage('stats')"><span class="nav-icon">📊</span>统计</div>
     <div class="bottom-nav-item" data-page="budget" onclick="switchPage('budget')"><span class="nav-icon">🎯</span>预算</div>
     <div class="bottom-nav-item" data-page="accounts" onclick="switchPage('accounts')"><span class="nav-icon">🏦</span>账户</div>
+    <div class="bottom-nav-item" onclick="showMorePanel()"><span class="nav-icon">⋯</span>更多</div>
   </div>
 </div>
 
@@ -447,11 +461,7 @@ function renderHome(){
   }
 
   return `
-    <div class="summary-month">
-      <button onclick="changeMonth(-1)">◀</button>
-      <span>${viewMonth.replace('-','年')}月</span>
-      <button onclick="changeMonth(1)">▶</button>
-    </div>
+    ${monthSelectorHtml()}
     <div class="summary-card">
       <div class="label">本月结余</div>
       <div class="amount">${fmt(s.balance)}</div>
@@ -470,6 +480,26 @@ function renderHome(){
     </div>`;
 }
 
+function monthSelectorHtml(){
+  const [y,m] = viewMonth.split('-').map(Number);
+  const now = new Date();
+  let yearOpts = '';
+  for(let yr = 2024; yr <= now.getFullYear()+1; yr++){
+    yearOpts += `<option value="${yr}"${yr===y?' selected':''}>${yr}年</option>`;
+  }
+  let monthOpts = '';
+  for(let mo = 1; mo <= 12; mo++){
+    monthOpts += `<option value="${mo}"${mo===m?' selected':''}>${mo}月</option>`;
+  }
+  return `<div class="summary-month">
+    <select onchange="setMonth(this.value)">${yearOpts}</select>
+    <span class="month-label">月</span>
+    <select onchange="setMonth2(this.value)">${monthOpts}</select>
+  </div>`;
+}
+function setMonth(year){ const [,m]=viewMonth.split('-'); viewMonth=year+'-'+m; renderPage(); }
+function setMonth2(month){ const [y]=viewMonth.split('-'); viewMonth=y+'-'+String(month).padStart(2,'0'); renderPage(); }
+
 function changeMonth(dir){
   const [y,m] = viewMonth.split('-').map(Number);
   const d = new Date(y, m-1+dir, 1);
@@ -486,11 +516,7 @@ function renderTransactions(){
     groups[t.date].push(t);
   });
 
-  let html = `<div class="summary-month">
-    <button onclick="changeMonth(-1)">◀</button>
-    <span>${viewMonth.replace('-','年')}月</span>
-    <button onclick="changeMonth(1)">▶</button>
-  </div>`;
+  let html = `${monthSelectorHtml()}`;
 
   if(Object.keys(groups).length===0){
     html += `<div class="empty"><div class="icon">📋</div><p>暂无记录</p></div>`;
@@ -633,11 +659,7 @@ function renderStats(){
   });
 
   return `
-    <div class="summary-month">
-      <button onclick="changeMonth(-1)">◀</button>
-      <span>${viewMonth.replace('-','年')}月</span>
-      <button onclick="changeMonth(1)">▶</button>
-    </div>
+    ${monthSelectorHtml()}
     <div class="section">
       <div class="section-title" style="margin-bottom:8px;">支出分类</div>
       ${pieHtml}
@@ -976,6 +998,23 @@ function closeModal(){
 const GIST_API = 'https://api.github.com/gists';
 let cloudConfig = null;
 try{ const c=localStorage.getItem(CLOUD_KEY); if(c) cloudConfig=JSON.parse(c); }catch(e){}
+
+function showMorePanel(){
+  const syncStatus = cloudConfig ? '已连接' : '未连接';
+  const syncIcon = cloudConfig ? '🟢' : '⚪';
+  document.getElementById('modalContainer').innerHTML = `
+    <div class="more-overlay" onclick="closeMorePanel()"></div>
+    <div class="more-panel">
+      <div class="more-panel-header"><h3>更多</h3><button class="more-panel-close" onclick="closeMorePanel()">✕</button></div>
+      <div class="more-menu-item" onclick="closeMorePanel();showCloudSetupModal()"><span class="mmi-icon">☁️</span><span class="mmi-text">云端同步 <span style="font-size:12px;color:var(--text3)">${syncIcon}${syncStatus}</span></span><span class="mmi-arrow">›</span></div>
+      <div class="more-menu-item" onclick="closeMorePanel();exportData()"><span class="mmi-icon">📤</span><span class="mmi-text">导出数据</span><span class="mmi-arrow">›</span></div>
+      <div class="more-menu-item" onclick="closeMorePanel();document.getElementById('importFile').click()"><span class="mmi-icon">📥</span><span class="mmi-text">导入数据</span><span class="mmi-arrow">›</span></div>
+      <div class="more-menu-divider"></div>
+      <div class="more-menu-item" onclick="closeMorePanel();toggleTheme()"><span class="mmi-icon">${data.settings.theme==='dark'?'☀️':'🌙'}</span><span class="mmi-text">切换主题</span><span class="mmi-arrow">›</span></div>
+      <div class="more-menu-item" onclick="closeMorePanel();cloudLoad()"><span class="mmi-icon">🔄</span><span class="mmi-text">手动同步</span><span class="mmi-arrow">›</span></div>
+    </div>`;
+}
+function closeMorePanel(){ document.getElementById('modalContainer').innerHTML=''; }
 
 function showCloudSetupModal(){
   const existing = cloudConfig ? `
