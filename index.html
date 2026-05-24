@@ -68,7 +68,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
 .summary-card .stat .s-label{font-size:11px;opacity:.7;margin-bottom:2px;}
 .summary-card .stat .s-val{font-size:16px;font-weight:700;}
 .summary-month{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;}
-.summary-month button{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text2);background:var(--surface);border:1px solid var(--border);}
+.summary-month button{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text2);background:var(--surface);border:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.summary-month button:active{background:var(--primary);color:#fff;}
 .summary-month button:hover{background:var(--surface2);}
 .summary-month span{font-size:16px;font-weight:700;min-width:120px;text-align:center;}
 
@@ -982,9 +983,14 @@ function showCloudSetupModal(){
       <div style="font-weight:600;color:var(--green);">✓ 云端同步已启用</div>
       <div style="color:var(--text3);font-size:12px;margin-top:4px;word-break:break-all;">Gist ID: ${cloudConfig.gistId}</div>
     </div>
+    <div class="form-group"><label>GitHub Token</label><input type="password" id="cloudToken" value="${cloudConfig.token||''}" placeholder="ghp_xxx"></div>
+    <div class="form-group"><label>Gist ID</label><input type="text" id="cloudGistId" value="${cloudConfig.gistId||''}"></div>
     <div class="modal-actions" style="justify-content:space-between;">
       <button class="btn-danger" onclick="disconnectCloud()">断开连接</button>
-      <button class="btn-cancel" onclick="closeModal()">关闭</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-cancel" onclick="closeModal()">关闭</button>
+        <button class="btn-primary" onclick="updateCloudConfig()">保存修改</button>
+      </div>
     </div>
   ` : `
     <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;">
@@ -1037,7 +1043,24 @@ async function connectCloud(){
 function disconnectCloud(){
   if(!confirm('确定断开云端同步？本地数据不会丢失。')) return;
   cloudConfig=null; localStorage.removeItem(CLOUD_KEY);
-  closeModal(); showSync('已断开',2000);
+  closeModal(); showSync('已断开',2000); renderPage();
+}
+
+async function updateCloudConfig(){
+  const token = document.getElementById('cloudToken')?.value.trim();
+  const gistId = document.getElementById('cloudGistId')?.value.trim();
+  if(!token||!gistId){ showSync('请填写完整',3000,true); return; }
+  showSync('正在验证...');
+  try{
+    const res = await fetch(GIST_API+'/'+gistId,{headers:{'Authorization':'Bearer '+token}});
+    if(!res.ok) throw new Error('Gist 不存在或 Token 无权限');
+    cloudConfig = {token, gistId};
+    localStorage.setItem(CLOUD_KEY,JSON.stringify(cloudConfig));
+    closeModal(); await cloudLoad();
+    showSync('已更新 ✓',3000);
+  }catch(e){
+    showSync('更新失败: '+e.message,5000,true);
+  }
 }
 
 let cloudSaveTimer=null, cloudLoading=false;
