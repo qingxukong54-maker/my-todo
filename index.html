@@ -338,14 +338,35 @@ function getCat(id){
 // ===== DATA =====
 let data = {
   transactions:[], accounts:[...DEFAULT_ACCOUNTS],
-  budgets:{}, settings:{theme:'light'}, version:VERSION
+  budgets:{}, customBudgets:[], settings:{theme:'light'}, version:VERSION
 };
 let currentPage = 'home';
 let viewMonth = new Date().toISOString().slice(0,7); // YYYY-MM
 let addType = 'expense'; // expense | income | transfer
 
 // Load
-try{ const s=localStorage.getItem(STORAGE_KEY); if(s) data=JSON.parse(s); if(!data.accounts) data.accounts=[...DEFAULT_ACCOUNTS]; if(!data.budgets) data.budgets={}; data.version=VERSION; }catch(e){}
+try{ const s=localStorage.getItem(STORAGE_KEY); if(s) data=JSON.parse(s); if(!data.accounts) data.accounts=[...DEFAULT_ACCOUNTS]; if(!data.budgets) data.budgets={}; if(!data.customBudgets) data.customBudgets=[]; data.version=VERSION; }catch(e){}
+// 启动时自动添加缺失的负债账户
+(function(){
+  const LIABILITIES = [
+    {id:'banni',   name:'班尼',      emoji:'👤',balance:-11000},
+    {id:'zuozuo',  name:'左左',      emoji:'👤',balance:-2500},
+    {id:'jiangyue', name:'江玥',      emoji:'👤',balance:-1500},
+    {id:'ccb_card', name:'建行信用卡', emoji:'💳',balance:-1000},
+    {id:'cmb_card', name:'招行信用卡', emoji:'💳',balance:-50000},
+    {id:'zl_finance',name:'招联金融',  emoji:'🏦',balance:-50000},
+    {id:'zhangyi', name:'张仪',      emoji:'👤',balance:-23000},
+    {id:'jiebei',   name:'借呗',      emoji:'💰',balance:-6400},
+  ];
+  let changed=false;
+  if(!data.accounts) data.accounts=[...DEFAULT_ACCOUNTS];
+  LIABILITIES.forEach(a=>{
+    if(!data.accounts.find(e=>e.id===a.id)){
+      data.accounts.push({...a}); changed=true;
+    }
+  });
+  if(changed){ saveData(); }
+})();
 
 function saveData(){
   data.version = VERSION;
@@ -683,6 +704,8 @@ function getBudgetInfo(){
     totalBudget+=budget;
     totalSpent+=(catSpent[catId]||0);
   });
+  // 自定义预算项（不关联支出分类，预算金额即为待支出计划）
+  (data.customBudgets||[]).forEach(b=>{ totalBudget+=b.amount; });
   return {totalBudget, spent:totalSpent};
 }
 
@@ -710,7 +733,21 @@ function renderBudget(){
     }
   });
 
-  if(!budgetList) budgetList = `<div class="empty"><div class="icon">🎯</div><p>还没有设置预算<br><small>点击分类旁的 + 号添加</small></p></div>`;
+  // 自定义预算项
+  let customList = '';
+  (data.customBudgets||[]).forEach((b,i)=>{
+    customList += `<div class="budget-item">
+      <div class="budget-cat" style="background:var(--blue-light)">${b.emoji||'📌'}</div>
+      <div class="budget-info">
+        <div class="budget-cat-name">${b.name}</div>
+        <div class="budget-amounts" style="font-size:14px;font-weight:600;">预算 <span style="color:var(--primary-dark)">${fmt(b.amount)}</span></div>
+      </div>
+      <button class="budget-edit" onclick="editCustomBudget(${i})">✏️</button>
+      <button class="budget-edit" onclick="deleteCustomBudget(${i})" style="color:var(--red);">🗑️</button>
+    </div>`;
+  });
+
+  if(!budgetList && !customList) budgetList = `<div class="empty"><div class="icon">🎯</div><p>还没有设置预算<br><small>点击分类旁的 + 号添加</small></p></div>`;
 
   // Category selector for adding budget
   let catOptions = '';
@@ -740,7 +777,8 @@ function renderBudget(){
       <div class="section-header"><span class="section-title">预算分类</span></div>
       ${budgetList}
     </div>
-    ${catOptions ? `<div class="section"><div class="section-header"><span class="section-title">添加预算</span></div><div class="cat-grid">${catOptions}</div></div>` : ''}`;
+    ${customList ? `<div class="section"><div class="section-header"><span class="section-title">自定义预算</span><button style="font-size:13px;color:var(--primary);font-weight:600;" onclick="addCustomBudget()">+ 添加</button></div>${customList}</div>` : `<div class="section"><div class="section-header"><span class="section-title">自定义预算</span><button style="font-size:13px;color:var(--primary);font-weight:600;" onclick="addCustomBudget()">+ 添加</button></div><div style="text-align:center;padding:12px;color:var(--text3);font-size:13px;">暂无自定义预算</div></div>`}
+    ${catOptions ? `<div class="section"><div class="section-header"><span class="section-title">添加分类预算</span></div><div class="cat-grid">${catOptions}</div></div>` : ''}`;
 }
 
 function setBudget(catId){
@@ -755,17 +793,53 @@ function setBudget(catId){
   saveData(); renderPage();
 }
 
+function addCustomBudget(){
+  const name = prompt('预算名称：');
+  if(!name||!name.trim()) return;
+  const amountStr = prompt('预算金额（元）：');
+  if(amountStr===null) return;
+  const amount = parseFloat(amountStr);
+  if(isNaN(amount)||amount<=0) return;
+  const emojis = ['📌','🔧','🚗','📱','💻','🏠','🎉','📦','💊','🎯'];
+  const emoji = prompt('选择 emoji（可选，直接回车跳过）：', emojis[Math.floor(Math.random()*emojis.length)]) || '📌';
+  if(!data.customBudgets) data.customBudgets = [];
+  data.customBudgets.push({id: Date.now().toString(36), name: name.trim(), emoji, amount});
+  saveData(); renderPage();
+}
+
+function editCustomBudget(idx){
+  const b = data.customBudgets[idx];
+  if(!b) return;
+  const name = prompt('预算名称：', b.name);
+  if(name===null) return;
+  const amountStr = prompt('预算金额（元）：', b.amount);
+  if(amountStr===null) return;
+  const amount = parseFloat(amountStr);
+  if(isNaN(amount)||amount<=0) return;
+  b.name = name.trim() || b.name;
+  b.amount = amount;
+  saveData(); renderPage();
+}
+
+function deleteCustomBudget(idx){
+  const b = data.customBudgets[idx];
+  if(!b || !confirm(`删除预算「${b.name}」？`)) return;
+  data.customBudgets.splice(idx, 1);
+  saveData(); renderPage();
+}
+
 // ===== ACCOUNTS PAGE =====
 function renderAccounts(){
   let total = data.accounts.reduce((s,a)=>s+a.balance,0);
   let list = '';
-  data.accounts.forEach(acc=>{
+  data.accounts.forEach((acc,idx)=>{
     list += `<div class="account-card">
       <span class="acc-icon">${acc.emoji}</span>
       <div class="acc-info">
         <div class="acc-name">${acc.name}</div>
       </div>
       <div class="acc-balance ${acc.balance<0?'negative':''}">${fmt(acc.balance)}</div>
+      <button class="budget-edit" onclick="deleteAccount(${idx})" title="删除账户" style="color:var(--text3);font-size:16px;margin-left:4px;">✕</button>
     </div>`;
   });
 
@@ -789,6 +863,14 @@ function addAccount(){
   const emoji = prompt('图标 emoji（如 💳）：') || '💳';
   const id = 'acc_'+Date.now();
   data.accounts.push({id, name, emoji, balance:0});
+  saveData(); renderPage();
+}
+
+function deleteAccount(idx){
+  const acc = data.accounts[idx];
+  if(!acc) return;
+  if(!confirm(`确定删除账户「${acc.name}」？\n余额 ${fmt(acc.balance)}，相关的记账记录不会删除。`)) return;
+  data.accounts.splice(idx, 1);
   saveData(); renderPage();
 }
 
