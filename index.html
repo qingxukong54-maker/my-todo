@@ -308,6 +308,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
       </div>
     </nav>
     <div class="sidebar-stats">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 8px;border-radius:var(--radius-sm);background:var(--surface2);cursor:pointer;" onclick="showCloudSetupModal()">
+        <span style="font-size:14px;">☁️</span>
+        <span style="flex:1;font-size:13px;color:var(--text2);">云端同步</span>
+        <span id="sidebarSyncIcon" style="font-size:10px;"></span>
+      </div>
       <div style="display:flex;gap:4px;margin-bottom:10px;">
         <button onclick="manualSync()" style="flex:1;font-size:12px;padding:6px 0;border-radius:var(--radius-sm);background:var(--surface2);color:var(--text2);" title="手动同步">🔄 同步</button>
         <button onclick="exportData()" style="flex:1;font-size:12px;padding:6px 0;border-radius:var(--radius-sm);background:var(--surface2);color:var(--text2);" title="导出数据">📤 导出</button>
@@ -534,6 +539,8 @@ async function connectCloud(){
 
     cloudConfig = {token: token, gistId: finalGistId};
     localStorage.setItem(CLOUD_KEY, JSON.stringify(cloudConfig));
+    updateSyncIcon();
+    document.getElementById('cloudBanner').classList.add('hidden');
     closeModal();
     document.getElementById('cloudBanner').classList.add('hidden');
     await cloudLoad();
@@ -549,6 +556,7 @@ async function connectCloud(){
 function disconnectCloud(){
   if(!confirm('确定断开云端同步？本地数据不会丢失。')) return;
   cloudConfig=null; localStorage.removeItem(CLOUD_KEY);
+  updateSyncIcon();
   document.getElementById('cloudBanner').classList.remove('hidden');
   closeModal();
   showSync('已断开', 2000);
@@ -640,11 +648,26 @@ function showSync(msg, dur=2000, isError=false){
   if(dur) setTimeout(()=>{el.className='sync-indicator';el.innerHTML='';}, dur);
 }
 
+// Update sidebar sync icon
+function updateSyncIcon(){
+  const el = document.getElementById('sidebarSyncIcon');
+  if(!el) return;
+  if(cloudConfig && cloudConfig.gistId){
+    el.textContent = '🟢';
+    el.title = '已连接';
+  } else {
+    el.textContent = '⚪';
+    el.title = '未连接';
+  }
+}
+
 // Clear old JSONBin/JSONBlob config (migration)
 try{ const c=localStorage.getItem(CLOUD_KEY); if(c){const p=JSON.parse(c);if((p.apiKey||p.blobId)&&!p.gistId){localStorage.removeItem(CLOUD_KEY);cloudConfig=null;}} }catch(e){}
 
 // Init cloud banner
 if(cloudConfig && cloudConfig.gistId) document.getElementById('cloudBanner').classList.add('hidden');
+// Update sidebar sync icon
+updateSyncIcon();
 // Auto load from cloud on start
 if(cloudConfig && cloudConfig.gistId) setTimeout(()=>cloudLoad(), 500);
 // Auto poll for changes every 30 seconds
