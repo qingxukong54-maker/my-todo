@@ -138,17 +138,70 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
 .cal-nav:hover{background:var(--border);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
 .cal-weekday{text-align:center;font-size:12px;color:var(--text3);padding:8px 0;font-weight:600;}
-.cal-day{min-height:72px;background:var(--surface);border-radius:var(--radius-sm);padding:5px;cursor:pointer;transition:all .15s;border:1.5px solid transparent;}
+.cal-day{min-height:72px;background:var(--surface);border-radius:var(--radius-sm);padding:5px;cursor:pointer;transition:all .15s;border:1.5px solid transparent;overflow:hidden;}
 .cal-day:hover{border-color:var(--primary);}
 .cal-day.today{border-color:var(--primary);background:var(--primary-light);}
 .cal-day.other-month{opacity:.25;}
 .cal-day-num{font-size:13px;font-weight:700;margin-bottom:3px;}
 .cal-day-num.today{color:var(--primary);}
+.cal-day-lunar{font-size:9px;color:var(--text3);margin-bottom:2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-day-lunar.holiday{color:var(--red);font-weight:600;}
+.cal-day-lunar.term{color:var(--green);}
 .cal-task{font-size:10px;padding:2px 4px;margin-bottom:1px;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cal-task.p-high{background:#fef2f2;color:var(--red);}
 .cal-task.p-medium{background:#fff7ed;color:var(--orange);}
 .cal-task.p-low{background:#eff6ff;color:var(--blue);}
 .cal-task.p-none{background:var(--surface2);color:var(--text3);}
+.cal-dot-row{display:flex;gap:3px;justify-content:center;margin-top:auto;padding-top:2px;}
+.cal-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.cal-dot.has-task{background:var(--primary);}
+.cal-dot.overdue{background:var(--red);}
+
+/* Mobile calendar: equal cells + swipe */
+.m-cal-container{position:relative;overflow:hidden;-webkit-user-select:none;user-select:none;}
+.m-cal-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:0 4px;}
+.m-cal-year-sel,.m-cal-month-sel{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:14px;color:var(--text);font-weight:600;appearance:none;-webkit-appearance:none;}
+.m-cal-year-sel{min-width:80px;}
+.m-cal-month-sel{min-width:60px;}
+.m-cal-today-btn{background:var(--primary-light);color:var(--primary);font-size:12px;padding:5px 12px;border-radius:var(--radius-sm);font-weight:600;margin-left:auto;}
+.m-cal-today-btn:active{background:var(--primary);color:#fff;}
+.m-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;background:var(--surface);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);transition:transform .2s ease;}
+.m-cal-weekday{text-align:center;font-size:11px;color:var(--text3);padding:8px 0 6px;font-weight:700;background:var(--surface2);}
+.m-cal-cell{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 1px;cursor:pointer;position:relative;border:0.5px solid var(--surface2);transition:background .12s;}
+.m-cal-cell:active{background:var(--primary-light);}
+.m-cal-cell.other-month{opacity:.3;}
+.m-cal-cell.today{background:var(--primary-light);}
+.m-cal-cell.selected{background:var(--primary);color:#fff;}
+.m-cal-cell.selected .m-cal-cell-lunar{color:rgba(255,255,255,.7);}
+.m-cal-cell.selected .m-cal-cell-lunar.holiday{color:#ffcdd2;}
+.m-cal-cell.selected .m-cal-cell-lunar.term{color:#c8e6c9;}
+.m-cal-cell-num{font-size:15px;font-weight:700;line-height:1.2;}
+.m-cal-cell.today .m-cal-cell-num{color:var(--primary);}
+.m-cal-cell.selected .m-cal-cell-num{color:#fff;}
+.m-cal-cell-lunar{font-size:8px;color:var(--text3);line-height:1.2;margin-top:1px;}
+.m-cal-cell-lunar.holiday{color:var(--red);font-weight:600;}
+.m-cal-cell-lunar.term{color:var(--green);}
+.m-cal-dots{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);display:flex;gap:2px;}
+.m-cal-dot{width:4px;height:4px;border-radius:50%;}
+.m-cal-dot.blue{background:var(--primary);}
+.m-cal-dot.red{background:var(--red);}
+.m-cal-cell.selected .m-cal-dot.blue{background:#fff;}
+.m-cal-cell.selected .m-cal-dot.red{background:#ffcdd2;}
+
+/* Calendar selected day tasks panel */
+.m-cal-tasks{margin-top:10px;padding:0 4px;}
+.m-cal-tasks-title{font-size:13px;font-weight:700;color:var(--text2);margin-bottom:8px;padding:0 2px;}
+.m-cal-task-item{display:flex;align-items:center;gap:8px;padding:10px 8px;background:var(--surface);border-radius:var(--radius-sm);margin-bottom:4px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.m-cal-task-item:active{background:var(--surface2);}
+.m-cal-task-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--surface3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;transition:all .2s;}
+.m-cal-task-check.done{background:var(--green);border-color:var(--green);color:#fff;}
+.m-cal-task-title{flex:1;font-size:14px;line-height:1.4;}
+.m-cal-task-title.done{text-decoration:line-through;color:var(--text3);}
+
+/* FAB - Floating Action Button */
+.fab{display:none;position:fixed;right:20px;bottom:calc(72px + var(--safe-b));width:52px;height:52px;border-radius:50%;background:var(--primary);color:#fff;font-size:26px;box-shadow:0 4px 16px rgba(79,110,247,.4);z-index:80;align-items:center;justify-content:center;transition:transform .15s,box-shadow .15s;}
+.fab:active{transform:scale(.92);box-shadow:0 2px 8px rgba(79,110,247,.3);}
+.fab.show{display:flex;}
 
 /* Pomodoro */
 .pomo-section{display:flex;flex-direction:column;align-items:center;padding:24px 20px;}
@@ -221,8 +274,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
   .quick-add{padding:10px 12px;padding-bottom:calc(10px + var(--safe-b));}
   .main-header{padding:10px 14px;}
   .search-box{max-width:none;}
-  .cal-day{min-height:48px;padding:3px;}
-  .cal-task{font-size:9px;}
+  /* Mobile: hide desktop calendar, use mobile version */
+  .calendar-wrap{display:none;}
   .pomo-circle{width:180px;height:180px;}
   .pomo-circle svg{width:188px;height:188px;top:-6px;left:-6px;}
   .pomo-display{font-size:40px;}
@@ -409,6 +462,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
   </div>
 </div>
 
+<!-- FAB - Floating Action Button (mobile) -->
+<button class="fab" id="fabBtn" onclick="fabAddTask()">＋</button>
+
 <!-- Modal container -->
 <div id="modalContainer"></div>
 
@@ -446,9 +502,10 @@ function saveData(){
 
 let data = loadData();
 let currentView='today', currentSort='all', currentListId=null, selectedTaskId=null;
-let calYear, calMonth;
+let calYear, calMonth, calSelectedDate=null;
 let pomoInterval=null, pomoTimeLeft=25*60, pomoRunning=false;
 let isMobile = window.innerWidth <= 768;
+let _detailOrigState='';
 
 // ===== HELPERS =====
 const genId = () => Date.now().toString(36)+Math.random().toString(36).substr(2,5);
@@ -737,7 +794,7 @@ function switchView(view, listId){
   const toolViews=['calendar','pomodoro','habits','stats'];
   if(toolViews.includes(view)){
     quickAdd.style.display='none'; header.style.display='none';
-    if(view==='calendar') renderCalendar();
+    if(view==='calendar'){calSelectedDate=todayStr();renderCalendar();}
     else if(view==='pomodoro') renderPomodoro();
     else if(view==='habits') renderHabits();
     else if(view==='stats') renderStats();
@@ -745,6 +802,7 @@ function switchView(view, listId){
     quickAdd.style.display='flex'; header.style.display='flex';
     renderTasks();
   }
+  updateFab();
 }
 
 function mobileTabClick(view){
@@ -887,15 +945,6 @@ function renderDetail(){
 }
 
 // ===== DETAIL SHEET (Mobile) =====
-function openDetailSheet(){
-  renderDetailSheetContent();
-  document.getElementById('detailSheetOverlay').classList.add('show');
-  setTimeout(()=>document.getElementById('detailSheet').classList.add('show'),10);
-}
-function closeDetailSheet(){
-  document.getElementById('detailSheet').classList.remove('show');
-  setTimeout(()=>document.getElementById('detailSheetOverlay').classList.remove('show'),300);
-}
 function renderDetailSheetContent(){ document.getElementById('detailSheetBody').innerHTML=buildDetailHTML(); }
 
 function updateTask(key,val){
@@ -928,8 +977,143 @@ function addList(){const name=document.getElementById('newListName').value.trim(
 function closeModal(){document.getElementById('modalContainer').innerHTML='';}
 
 // ===== CALENDAR =====
+// --- Lunar Calendar Data & Functions ---
+// Lunar month days for years 1900-2100
+const LUNAR_INFO=[
+0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2,//1900-1909
+0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977,//1910-1919
+0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,//1920-1929
+0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,//1930-1939
+0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,//1940-1949
+0x06ca0,0x0b550,0x15355,0x04da0,0x0a5b0,0x14573,0x052b0,0x0a9a8,0x0e950,0x06aa0,//1950-1959
+0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,//1960-1969
+0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b6a0,0x195a6,//1970-1979
+0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570,//1980-1989
+0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06b58,0x05ac0,0x0ab60,0x096d5,0x092e0,//1990-1999
+0x0c960,0x0d954,0x0d4a0,0x0da50,0x07552,0x056a0,0x0abb7,0x025d0,0x092d0,0x0cab5,//2000-2009
+0x0a950,0x0b4a0,0x0baa4,0x0ad50,0x055d9,0x04ba0,0x0a5b0,0x15176,0x052b0,0x0a930,//2010-2019
+0x07954,0x06aa0,0x0ad50,0x05b52,0x04b60,0x0a6e6,0x0a4e0,0x0d260,0x0ea65,0x0d530,//2020-2029
+0x05aa0,0x076a3,0x096d0,0x04afb,0x04ad0,0x0a4d0,0x1d0b6,0x0d250,0x0d520,0x0dd45,//2030-2039
+0x0b5a0,0x056d0,0x055b2,0x049b0,0x0a577,0x0a4b0,0x0aa50,0x1b255,0x06d20,0x0ada0,//2040-2049
+0x14b63//2050
+];
+const LUNAR_MONTH_CN=['正','二','三','四','五','六','七','八','九','十','冬','腊'];
+const LUNAR_DAY_CN=['初一','初二','初三','初四','初五','初六','初七','初八','初九','初十',
+  '十一','十二','十三','十四','十五','十六','十七','十八','十九','二十',
+  '廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+
+// Solar terms (节气) data - approximate dates for 2020-2050
+const SOLAR_TERMS={
+  '1-5':'小寒','1-20':'大寒','2-3':'立春','2-18':'雨水','3-5':'惊蛰','3-20':'春分',
+  '4-4':'清明','4-20':'谷雨','5-5':'立夏','5-21':'小满','6-5':'芒种','6-21':'夏至',
+  '7-7':'小暑','7-22':'大暑','8-7':'立秋','8-23':'处暑','9-7':'白露','9-23':'秋分',
+  '10-8':'寒露','10-23':'霜降','11-7':'立冬','11-22':'小雪','12-7':'大雪','12-22':'冬至'
+};
+
+// Solar holidays (公历节日)
+const SOLAR_HOLIDAYS={
+  '1-1':'元旦','2-14':'情人节','3-8':'妇女节','3-12':'植树节','4-1':'愚人节',
+  '5-1':'劳动节','5-4':'青年节','6-1':'儿童节','7-1':'建党节','8-1':'建军节',
+  '9-10':'教师节','10-1':'国庆节','12-24':'平安夜','12-25':'圣诞节'
+};
+
+// Lunar holidays (农历节日) - mapped to approximate solar dates per year
+// Format: 'YYYY-MM-DD': '节日名'
+function getLunarHolidays(year){
+  // Fixed lunar date holidays, converted to solar for given year
+  const lunarFixed=[
+    {m:1,d:1,name:'春节'},{m:1,d:15,name:'元宵节'},{m:5,d:5,name:'端午节'},
+    {m:7,d:7,name:'七夕'},{m:7,d:15,name:'中元节'},{m:8,d:15,name:'中秋节'},
+    {m:9,d:9,name:'重阳节'},{m:12,d:30,name:'除夕'}
+  ];
+  const result={};
+  lunarFixed.forEach(h=>{
+    const solar=lunarToSolar(year,h.m,h.d);
+    if(solar) result[`${solar.y}-${String(solar.m).padStart(2,'0')}-${String(solar.d).padStart(2,'0')}`]=h.name;
+  });
+  return result;
+}
+
+function lYearDays(y){let sum=348;for(let i=0x8000;i>0x8;i>>=1)sum+=(LUNAR_INFO[y-1900]&i)?1:0;return sum+leapDays(y);}
+function leapMonth(y){return LUNAR_INFO[y-1900]&0xf;}
+function leapDays(y){if(leapMonth(y))return(LUNAR_INFO[y-1900]&0x10000)?30:29;return 0;}
+function monthDays(y,m){return(LUNAR_INFO[y-1900]&(0x10000>>m))?30:29;}
+
+function lunarToSolar(y,lunarM,lunarD){
+  let yearDaysTotal=0;
+  for(let ly=1900;ly<y;ly++) yearDaysTotal+=lYearDays(ly);
+  const baseDate=new Date(1900,0,31);
+  const lunarNewYear=new Date(baseDate.getTime()+yearDaysTotal*86400000);
+  let daysInYear=0;
+  const lp=leapMonth(y);
+  for(let m=1;m<lunarM;m++){
+    daysInYear+=monthDays(y,m);
+    if(m===lp) daysInYear+=leapDays(y);
+  }
+  daysInYear+=lunarD-1;
+  const result=new Date(lunarNewYear.getTime()+daysInYear*86400000);
+  return{y:result.getFullYear(),m:result.getMonth()+1,d:result.getDate()};
+}
+
+function solarToLunar(sY,sM,sD){
+  // Convert solar date to lunar date
+  const baseDate=new Date(1900,0,31);
+  const targetDate=new Date(sY,sM-1,sD);
+  let offset=Math.floor((targetDate-baseDate)/86400000);
+  let lunarYear=1900;
+  let daysInYear=lYearDays(lunarYear);
+  while(offset>=daysInYear){offset-=daysInYear;lunarYear++;daysInYear=lYearDays(lunarYear);}
+  let lunarMonth=1,lp=leapMonth(lunarYear),isLeap=false;
+  let daysInMonth=monthDays(lunarYear,lunarMonth);
+  while(offset>=daysInMonth){
+    offset-=daysInMonth;
+    if(lunarMonth===lp&&!isLeap){isLeap=true;daysInMonth=leapDays(lunarYear);if(offset<daysInMonth)break;}
+    else{lunarMonth++;isLeap=false;daysInMonth=monthDays(lunarYear,lunarMonth);}
+  }
+  const lunarDay=offset+1;
+  return{year:lunarYear,month:lunarMonth,day:lunarDay,isLeap};
+}
+
+function getLunarDayText(lunarMonth,lunarDay){
+  // 初一显示月份，其他显示日
+  if(lunarDay===1) return LUNAR_MONTH_CN[lunarMonth-1]+'月';
+  return LUNAR_DAY_CN[lunarDay-1];
+}
+
+function getCalendarInfo(sY,sM,sD){
+  // Returns {lunarText, type:'lunar'|'term'|'holiday'|'lholiday'}
+  const dateKey=`${sM}-${sD}`;
+  const fullKey=`${sY}-${String(sM).padStart(2,'0')}-${String(sD).padStart(2,'0')}`;
+
+  // 1. Check solar holidays
+  if(SOLAR_HOLIDAYS[dateKey]) return{text:SOLAR_HOLIDAYS[dateKey],type:'holiday'};
+
+  // 2. Check solar terms (use dateKey)
+  if(SOLAR_TERMS[dateKey]) return{text:SOLAR_TERMS[dateKey],type:'term'};
+
+  // 3. Check lunar holidays
+  const lunarHolidays=getLunarHolidays(sY);
+  if(lunarHolidays[fullKey]) return{text:lunarHolidays[fullKey],type:'holiday'};
+
+  // 4. Lunar day text
+  const lunar=solarToLunar(sY,sM,sD);
+  const lunarText=getLunarDayText(lunar.month,lunar.day);
+  return{text:lunarText,type:'lunar'};
+}
+
 function renderCalendar(){
   const now=new Date(); if(!calYear){calYear=now.getFullYear();calMonth=now.getMonth();}
+  if(!calSelectedDate) calSelectedDate=todayStr();
+
+  if(isMobile){
+    renderMobileCalendar();
+  } else {
+    renderDesktopCalendar();
+  }
+  updateFab();
+}
+
+function renderDesktopCalendar(){
   const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   const weekDays=['一','二','三','四','五','六','日'];
   const firstDay=new Date(calYear,calMonth,1); let startDay=firstDay.getDay(); startDay=startDay===0?6:startDay-1;
@@ -939,18 +1123,251 @@ function renderCalendar(){
   for(let d=1;d<=daysInMonth;d++){
     const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday=dateStr===today, dayTasks=data.tasks.filter(t=>t.date===dateStr);
-    const tasksHtml=dayTasks.slice(0,3).map(t=>`<div class="cal-task p-${t.priority||'none'}" title="${escHtml(t.title)}">${escHtml(t.title)}</div>`).join('');
-    const more=dayTasks.length>3?`<div style="font-size:9px;color:var(--text3)">+${dayTasks.length-3}</div>`:'';
-    days+=`<div class="cal-day ${isToday?'today':''}"><div class="cal-day-num ${isToday?'today':''}">${d}</div>${tasksHtml}${more}</div>`;
+    const info=getCalendarInfo(calYear,calMonth+1,d);
+    const lunarClass=info.type==='holiday'?'holiday':info.type==='term'?'term':'';
+    const tasksHtml=dayTasks.slice(0,2).map(t=>`<div class="cal-task p-${t.priority||'none'}" title="${escHtml(t.title)}">${escHtml(t.title)}</div>`).join('');
+    // Desktop: show lunar text
+    const lunarHtml=`<div class="cal-day-lunar ${lunarClass}">${escHtml(info.text)}</div>`;
+    // Dots for task indicators
+    const hasIncomplete=dayTasks.some(t=>!t.done);
+    const hasOverdue=dayTasks.some(t=>!t.done&&t.date<today);
+    const dotsHtml=(hasIncomplete||hasOverdue)?`<div class="cal-dot-row">${hasOverdue?'<span class="cal-dot overdue"></span>':''}${hasIncomplete?'<span class="cal-dot has-task"></span>':''}</div>`:'';
+    days+=`<div class="cal-day ${isToday?'today':''}" onclick="calDayClick('${dateStr}')"><div class="cal-day-num ${isToday?'today':''}">${d}</div>${lunarHtml}${tasksHtml}${dotsHtml}</div>`;
   }
   const total=startDay+daysInMonth, rem=total%7===0?0:7-total%7;
   for(let i=1;i<=rem;i++) days+=`<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+
+  // Selected day tasks
+  const selectedTasks=data.tasks.filter(t=>t.date===calSelectedDate);
+  const selectedDateDisplay=calSelectedDate?formatDate(calSelectedDate):'';
+  let tasksPanel='';
+  if(calSelectedDate){
+    tasksPanel=`<div style="margin-top:16px;"><div style="font-size:14px;font-weight:700;margin-bottom:10px;">📅 ${selectedDateDisplay} 的任务</div>`;
+    if(selectedTasks.length===0) tasksPanel+=`<div style="text-align:center;color:var(--text3);padding:20px;">暂无任务</div>`;
+    else selectedTasks.forEach(t=>{
+      tasksPanel+=`<div class="task-item" onclick="selectTask('${t.id}')" style="border-radius:var(--radius-sm);">
+        <div class="task-check ${t.done?'done':''}" onclick="event.stopPropagation();toggleDone('${t.id}')">${t.done?'✓':''}</div>
+        <div class="task-content"><div class="task-title ${t.done?'done':''}">${escHtml(t.title)}</div>
+        <div class="task-meta">${t.tags?t.tags.map(tag=>`<span class="task-tag">#${escHtml(tag)}</span>`).join(''):''}</div></div></div>`;
+    });
+    tasksPanel+=`</div>`;
+  }
+
   document.getElementById('taskList').innerHTML=`<div class="calendar-wrap"><div class="calendar-header">
     <button class="cal-nav" onclick="calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar()">◀</button>
     <h3>${calYear}年 ${monthNames[calMonth]}</h3>
     <button class="cal-nav" onclick="calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar()">▶</button>
-    <button class="cal-nav" style="margin-left:8px;font-size:12px;" onclick="calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderCalendar()">今天</button>
-  </div><div class="cal-grid">${weekDays.map(d=>`<div class="cal-weekday">${d}</div>`).join('')}${days}</div></div>`;
+    <button class="cal-nav" style="margin-left:8px;font-size:12px;" onclick="calYear=new Date().getFullYear();calMonth=new Date().getMonth();calSelectedDate=todayStr();renderCalendar()">今天</button>
+  </div><div class="cal-grid">${weekDays.map(d=>`<div class="cal-weekday">${d}</div>`).join('')}${days}</div>${tasksPanel}</div>`;
+}
+
+function calDayClick(dateStr){
+  calSelectedDate=dateStr;
+  renderCalendar();
+}
+
+function renderMobileCalendar(){
+  const today=todayStr();
+  const weekDays=['一','二','三','四','五','六','日'];
+  const firstDay=new Date(calYear,calMonth,1); let startDay=firstDay.getDay(); startDay=startDay===0?6:startDay-1;
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const prevMonth=calMonth===0?11:calMonth-1;
+  const prevYear=calMonth===0?calYear-1:calYear;
+  const prevDays=new Date(calYear,calMonth,0).getDate();
+
+  // Build year/month selectors
+  let yearOpts='', monthOpts='';
+  for(let y=calYear-3;y<=calYear+3;y++) yearOpts+=`<option value="${y}" ${y===calYear?'selected':''}>${y}年</option>`;
+  for(let m=1;m<=12;m++) monthOpts+=`<option value="${m-1}" ${m-1===calMonth?'selected':''}>${m}月</option>`;
+
+  // Build cells
+  let cells='';
+  // Previous month trailing days
+  for(let i=startDay-1;i>=0;i--){
+    cells+=`<div class="m-cal-cell other-month"><span class="m-cal-cell-num">${prevDays-i}</span></div>`;
+  }
+  // Current month days
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=dateStr===today;
+    const isSelected=dateStr===calSelectedDate;
+    const info=getCalendarInfo(calYear,calMonth+1,d);
+    const lunarClass=info.type==='holiday'?'holiday':info.type==='term'?'term':'';
+    const dayTasks=data.tasks.filter(t=>t.date===dateStr);
+    const hasIncomplete=dayTasks.some(t=>!t.done);
+    const hasOverdue=dayTasks.some(t=>!t.done&&t.date<today);
+    let dotsHtml='';
+    if(hasOverdue) dotsHtml+='<span class="m-cal-dot red"></span>';
+    if(hasIncomplete) dotsHtml+='<span class="m-cal-dot blue"></span>';
+
+    cells+=`<div class="m-cal-cell${isToday?' today':''}${isSelected?' selected':''}" onclick="calDayClick('${dateStr}')">
+      <span class="m-cal-cell-num">${d}</span>
+      <span class="m-cal-cell-lunar ${lunarClass}">${escHtml(info.text)}</span>
+      ${dotsHtml?`<div class="m-cal-dots">${dotsHtml}</div>`:''}
+    </div>`;
+  }
+  // Next month leading days
+  const total=startDay+daysInMonth, rem=total%7===0?0:7-total%7;
+  for(let i=1;i<=rem;i++){
+    cells+=`<div class="m-cal-cell other-month"><span class="m-cal-cell-num">${i}</span></div>`;
+  }
+
+  // Selected day tasks panel
+  const selectedTasks=data.tasks.filter(t=>t.date===calSelectedDate);
+  const selInfo=calSelectedDate?getCalendarInfo(parseInt(calSelectedDate.slice(0,4)),parseInt(calSelectedDate.slice(5,7)),parseInt(calSelectedDate.slice(8,10))):null;
+  let tasksPanel='';
+  if(calSelectedDate&&selectedTasks.length>0){
+    tasksPanel=`<div class="m-cal-tasks"><div class="m-cal-tasks-title">${formatDate(calSelectedDate)}${selInfo&&selInfo.type!=='lunar'?' · '+escHtml(selInfo.text):''} (${selectedTasks.length})</div>`;
+    selectedTasks.forEach(t=>{
+      tasksPanel+=`<div class="m-cal-task-item" onclick="selectTask('${t.id}')">
+        <div class="m-cal-task-check ${t.done?'done':''}" onclick="event.stopPropagation();toggleDone('${t.id}')">${t.done?'✓':''}</div>
+        <span class="m-cal-task-title ${t.done?'done':''}">${escHtml(t.title)}</span>
+      </div>`;
+    });
+    tasksPanel+=`</div>`;
+  } else if(calSelectedDate){
+    tasksPanel=`<div class="m-cal-tasks"><div class="m-cal-tasks-title">${formatDate(calSelectedDate)}</div><div style="text-align:center;color:var(--text3);padding:24px;font-size:13px;">暂无任务 🎉</div></div>`;
+  }
+
+  document.getElementById('taskList').innerHTML=`
+    <div style="padding:0 12px;">
+      <div class="m-cal-container" id="mCalContainer">
+        <div class="m-cal-header">
+          <select class="m-cal-year-sel" onchange="calYear=parseInt(this.value);calSelectedDate=null;renderCalendar()">${yearOpts}</select>
+          <select class="m-cal-month-sel" onchange="calMonth=parseInt(this.value);calSelectedDate=null;renderCalendar()">${monthOpts}</select>
+          <button class="m-cal-today-btn" onclick="calYear=new Date().getFullYear();calMonth=new Date().getMonth();calSelectedDate=todayStr();renderCalendar()">今天</button>
+        </div>
+        <div class="m-cal-grid" id="mCalGrid">
+          ${weekDays.map(d=>`<div class="m-cal-weekday">${d}</div>`).join('')}
+          ${cells}
+        </div>
+      </div>
+      ${tasksPanel}
+    </div>`;
+
+  // Setup swipe after render
+  requestAnimationFrame(setupCalSwipe);
+}
+
+// Touch swipe for month navigation
+let calTouchStartX=0, calTouchStartY=0, calSwiping=false;
+function setupCalSwipe(){
+  const grid=document.getElementById('mCalGrid');
+  if(!grid) return;
+  grid.addEventListener('touchstart',(e)=>{
+    calTouchStartX=e.touches[0].clientX;
+    calTouchStartY=e.touches[0].clientY;
+    calSwiping=true;
+  },{passive:true});
+  grid.addEventListener('touchmove',(e)=>{
+    if(!calSwiping) return;
+    const dx=e.touches[0].clientX-calTouchStartX;
+    const dy=e.touches[0].clientY-calTouchStartY;
+    // Only horizontal swipe
+    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>10){
+      grid.style.transform=`translateX(${dx*0.3}px)`;
+      grid.style.transition='none';
+    }
+  },{passive:true});
+  grid.addEventListener('touchend',(e)=>{
+    if(!calSwiping) return;
+    calSwiping=false;
+    const dx=e.changedTouches[0].clientX-calTouchStartX;
+    const dy=e.changedTouches[0].clientY-calTouchStartY;
+    grid.style.transform='';
+    grid.style.transition='transform .2s ease';
+    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>50){
+      if(dx<0){calMonth++;if(calMonth>11){calMonth=0;calYear++;}}
+      else{calMonth--;if(calMonth<0){calMonth=11;calYear--;}}
+      calSelectedDate=null;
+      renderCalendar();
+    }
+  },{passive:true});
+}
+
+// FAB visibility & action
+function updateFab(){
+  const fab=document.getElementById('fabBtn');
+  if(!fab) return;
+  const fabViews=['calendar','today','inbox'];
+  fab.classList.toggle('show',isMobile&&fabViews.includes(currentView));
+}
+function fabAddTask(){
+  // Open detail sheet with empty task for adding
+  const now=new Date();
+  let defaultDate='';
+  if(currentView==='today') defaultDate=todayStr();
+  const newTask={id:genId(),title:'',done:false,listId:currentListId||data.lists[0]?.id||'',
+    date:defaultDate,priority:'none',tags:[],subtasks:[],notes:'',createdAt:Date.now()};
+  data.tasks.unshift(newTask);
+  saveData();
+  selectedTaskId=newTask.id;
+  openDetailSheetForAdd();
+}
+
+// Detail sheet for adding new task (with save button)
+function openDetailSheetForAdd(){
+  renderDetailSheetContent();
+  document.getElementById('detailSheetActions').innerHTML=`
+    <button class="btn-cancel" onclick="cancelNewTask()">取消</button>
+    <button class="btn-primary" onclick="saveNewTask()">保存</button>`;
+  document.getElementById('detailSheetOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('detailSheet').classList.add('show'),10);
+}
+
+function cancelNewTask(){
+  // Remove the empty task
+  if(selectedTaskId){
+    const t=data.tasks.find(t=>t.id===selectedTaskId);
+    if(t&&!t.title.trim()){
+      data.tasks=data.tasks.filter(t=>t.id!==selectedTaskId);
+      saveData();renderTasks();renderCalendar();
+    }
+  }
+  closeDetailSheet();
+}
+
+function saveNewTask(){
+  const t=data.tasks.find(t=>t.id===selectedTaskId);
+  if(t){
+    // Get title from the detail sheet input
+    const titleInput=document.querySelector('#detailSheetBody .detail-title-input');
+    if(titleInput) t.title=titleInput.value.trim();
+    if(!t.title){
+      data.tasks=data.tasks.filter(t=>t.id!==selectedTaskId);
+    }
+    saveData(); renderTasks(); renderCalendar();
+  }
+  closeDetailSheet();
+}
+
+// Override openDetailSheet to show "保存" instead of "关闭"
+function openDetailSheet(){
+  renderDetailSheetContent();
+  document.getElementById('detailSheetOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('detailSheet').classList.add('show'),10);
+  // Change button to "保存"
+  const actions=document.getElementById('detailSheetActions');
+  if(actions){
+    actions.innerHTML=`
+      <button class="btn-primary" onclick="saveDetailAndClose()" id="detailSaveBtn">保存</button>`;
+  }
+  // Track original state for change detection
+  _detailOrigState=JSON.stringify(data.tasks.find(t=>t.id===selectedTaskId)||{});
+}
+function saveDetailAndClose(){
+  closeDetailSheet();
+}
+function closeDetailSheet(){
+  document.getElementById('detailSheet').classList.remove('show');
+  setTimeout(()=>document.getElementById('detailSheetOverlay').classList.remove('show'),300);
+  // Reset actions to default "关闭" after animation
+  setTimeout(()=>{
+    const actions=document.getElementById('detailSheetActions');
+    if(actions&&!actions.querySelector('.btn-cancel')){
+      actions.innerHTML=`<button class="btn-cancel" onclick="closeDetailSheet()">关闭</button>`;
+    }
+  },350);
 }
 
 // ===== POMODORO =====
