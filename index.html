@@ -317,6 +317,26 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
 .cloud-banner .cloud-text strong{font-size:14px;color:var(--primary);}
 .cloud-banner .cloud-text p{font-size:12px;color:var(--text3);margin-top:2px;}
 .cloud-banner.hidden{display:none;}
+
+/* Memo - Apple Notes style */
+.memo-wrap{padding:16px;overflow-y:auto;flex:1;}
+.memo-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+.memo-card{background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s,transform .1s;min-height:120px;display:flex;flex-direction:column;}
+.memo-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.12);transform:translateY(-1px);}
+.memo-card-title{font-size:15px;font-weight:700;margin-bottom:6px;word-break:break-word;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
+.memo-card-preview{font-size:13px;color:var(--text3);line-height:1.5;flex:1;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;}
+.memo-card-date{font-size:11px;color:var(--text3);margin-top:10px;}
+.memo-empty{text-align:center;padding:60px 20px;color:var(--text3);grid-column:1/-1;}
+.memo-empty .empty-icon{font-size:52px;margin-bottom:12px;}
+.memo-detail{display:flex;flex-direction:column;height:100%;}
+.memo-detail-title{font-size:20px;font-weight:700;border:none;background:transparent;padding:8px 0;margin-bottom:8px;color:var(--text);outline:none;}
+.memo-detail-title:focus{border-bottom:2px solid var(--primary);}
+.memo-detail-meta{font-size:12px;color:var(--text3);margin-bottom:12px;}
+.memo-detail-body{flex:1;resize:none;border:none;background:transparent;color:var(--text);font-size:15px;line-height:1.8;padding:8px 0;outline:none;font-family:inherit;}
+.memo-detail-body:focus{border-bottom:2px solid var(--primary);}
+@media(max-width:768px){
+  .memo-list{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
@@ -354,6 +374,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
         <div class="nav-item" data-view="habits" onclick="switchView('habits')">
           <span class="icon">💪</span><span>习惯打卡</span>
         </div>
+        <div class="nav-item" data-view="memo" onclick="switchView('memo')">
+          <span class="icon">📝</span><span>备忘录</span>
+        </div>
         <div class="nav-item" data-view="stats" onclick="switchView('stats')">
           <span class="icon">📊</span><span>统计</span>
         </div>
@@ -387,7 +410,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
   <main class="main" id="mainArea">
     <!-- Mobile title bar -->
     <div class="mobile-title" id="mobileTitle">
-      <h2 id="mobileTitleText">今天</h2>
+      <h2 id="mobileTitleText">收件箱</h2>
       <div class="mt-actions">
         <button class="mt-btn" onclick="toggleTheme()" id="themeBtnMobile">🌙</button>
       </div>
@@ -446,16 +469,34 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
   </div>
 </div>
 
+<!-- Memo detail sheet (mobile) -->
+<div class="detail-sheet-overlay" id="memoSheetOverlay" onclick="closeMemoSheet()"></div>
+<div class="detail-sheet" id="memoSheet">
+  <div class="detail-sheet-handle"></div>
+  <div class="detail-sheet-header">
+    <h3>备忘录</h3>
+    <button style="font-size:20px;color:var(--red);padding:4px 8px;" onclick="deleteMemo()">🗑️</button>
+  </div>
+  <div class="detail-sheet-body" id="memoSheetBody" style="padding:16px;">
+    <input class="memo-detail-title" id="memoTitleInput" placeholder="标题" oninput="autoSaveMemo()">
+    <div class="memo-detail-meta" id="memoDateMeta"></div>
+    <textarea class="memo-detail-body" id="memoContentInput" placeholder="写点什么..." oninput="autoSaveMemo()"></textarea>
+  </div>
+  <div class="detail-sheet-actions">
+    <button class="btn-cancel" onclick="closeMemoSheet()">完成</button>
+  </div>
+</div>
+
 <!-- Mobile bottom tabs -->
 <div class="bottom-tabs" id="bottomTabs">
-  <div class="bottom-tab active" data-view="today" onclick="mobileTabClick('today')">
-    <span class="bt-icon">📅</span><span>今天</span>
-  </div>
-  <div class="bottom-tab" data-view="inbox" onclick="mobileTabClick('inbox')">
+  <div class="bottom-tab active" data-view="inbox" onclick="mobileTabClick('inbox')">
     <span class="bt-icon">📥</span><span>收件箱</span>
   </div>
   <div class="bottom-tab" data-view="calendar" onclick="mobileTabClick('calendar')">
     <span class="bt-icon">🗓️</span><span>日历</span>
+  </div>
+  <div class="bottom-tab" data-view="memo" onclick="mobileTabClick('memo')">
+    <span class="bt-icon">📝</span><span>备忘录</span>
   </div>
   <div class="bottom-tab" data-view="habits" onclick="mobileTabClick('habits')">
     <span class="bt-icon">💪</span><span>习惯</span>
@@ -489,6 +530,7 @@ const defaultData = () => {
       {id:'list_daily',name:'日常生活',color:'#22C55E'}
     ],
     habits: [],
+    memos: [],
     pomodoro: { sessions:0, today:'' },
     settings: { theme:'light' },
     version: 2
@@ -513,7 +555,7 @@ function saveData(){
 }
 
 let data = loadData();
-let currentView='today', currentSort='all', currentListId=null, selectedTaskId=null;
+let currentView='inbox', currentSort='all', currentListId=null, selectedTaskId=null;
 let calYear, calMonth, calSelectedDate=null;
 let pomoInterval=null, pomoTimeLeft=25*60, pomoRunning=false;
 let isMobile = window.innerWidth <= 768;
@@ -780,7 +822,7 @@ function renderSidebar(){
 }
 
 // ===== VIEWS =====
-const viewTitles={inbox:'收件箱',today:'今天',week:'最近7天',all:'所有任务',calendar:'日历',pomodoro:'番茄钟',habits:'习惯打卡',stats:'数据统计'};
+const viewTitles={inbox:'收件箱',today:'今天',week:'最近7天',all:'所有任务',calendar:'日历',memo:'备忘录',pomodoro:'番茄钟',habits:'习惯打卡',stats:'数据统计'};
 
 function switchView(view, listId){
   currentView=view; currentListId=listId||null; selectedTaskId=null;
@@ -803,13 +845,14 @@ function switchView(view, listId){
 
   if(isMobile && mTitle) mTitle.textContent = title;
 
-  const toolViews=['calendar','pomodoro','habits','stats'];
-  const hideQuickAddViews=['calendar','today','inbox'];
+  const toolViews=['calendar','memo','pomodoro','habits','stats'];
+  const hideQuickAddViews=['calendar','inbox','memo'];
   if(toolViews.includes(view)){
     quickAdd.style.display='none'; header.style.display='none';
     if(view==='calendar'){if(!calSelectedDate)calSelectedDate=todayStr();renderCalendar();}
     else if(view==='pomodoro') renderPomodoro();
     else if(view==='habits') renderHabits();
+    else if(view==='memo') renderMemo();
     else if(view==='stats') renderStats();
   } else {
     quickAdd.style.display='flex'; header.style.display='flex';
@@ -854,7 +897,7 @@ function getFilteredTasks(){
   const weekEndStr=weekEnd.toISOString().slice(0,10);
   let tasks=[...data.tasks];
   switch(currentView){
-    case 'inbox': tasks=tasks.filter(t=>!t.date); break;
+    case 'inbox': /* 显示所有任务，不过滤日期 */ break;
     case 'today': tasks=tasks.filter(t=>t.date===today); break;
     case 'week': tasks=tasks.filter(t=>t.date&&t.date>=today&&t.date<=weekEndStr); break;
     case 'list': tasks=tasks.filter(t=>t.listId===currentListId); break;
@@ -865,6 +908,11 @@ function getFilteredTasks(){
   if(q) tasks=tasks.filter(t=>t.title.toLowerCase().includes(q)||(t.tags||[]).some(tag=>tag.toLowerCase().includes(q)));
   const prio={high:0,medium:1,low:2,none:3};
   tasks.sort((a,b)=>{
+    if(currentView==='inbox'){
+      const da=a.date||'9999-99-99',db=b.date||'9999-99-99';
+      if(da!==db) return da<db?-1:1;
+      return (a.createdAt||0)-(b.createdAt||0);
+    }
     if(a.done!==b.done) return a.done?1:-1;
     if((prio[a.priority]??3)!==(prio[b.priority]??3)) return (prio[a.priority]??3)-(prio[b.priority]??3);
     if((a.date||'z')!==(b.date||'z')) return (a.date||'z')<(b.date||'z')?-1:1;
@@ -875,7 +923,7 @@ function getFilteredTasks(){
 
 function renderTasks(){
   // 非任务视图（日历/番茄钟/习惯/统计）不渲染任务列表，避免覆盖页面内容
-  if(['calendar','pomodoro','habits','stats'].includes(currentView)) return;
+  if(['calendar','memo','pomodoro','habits','stats'].includes(currentView)) return;
   const tasks=getFilteredTasks(), today=todayStr(), el=document.getElementById('taskList');
   if(!tasks.length){el.innerHTML=`<div class="task-list-empty"><div class="empty-icon">🎉</div><div>没有任务，休息一下吧</div></div>`;renderSidebar();return;}
   const groups={};
@@ -1307,10 +1355,12 @@ function setupCalSwipe(){
 function updateFab(){
   const fab=document.getElementById('fabBtn');
   if(!fab) return;
-  const fabViews=['calendar','today','inbox'];
+  const fabViews=['calendar','inbox','memo'];
   fab.classList.toggle('show',isMobile&&fabViews.includes(currentView));
 }
 function fabAddTask(){
+  if(currentView==='memo'){addMemo();return;}
+  
   // Same as opening detail sheet for a new task — identical behavior to editing
   const now=new Date();
   let defaultDate='';
@@ -1498,12 +1548,86 @@ const mbt=document.getElementById('themeBtnMobile'); if(mbt) mbt.textContent=the
 function checkMobile(){isMobile=window.innerWidth<=768;}
 window.addEventListener('resize',checkMobile);
 
+
+// ===== MEMO =====
+let selectedMemoId=null, _memoTimer=null;
+function renderMemo(){
+  const el=document.getElementById('taskList');
+  if(!data.memos||!data.memos.length){
+    el.innerHTML='<div class="memo-wrap"><div class="memo-empty"><div class="empty-icon">📝</div><div>还没有备忘录，点右下角 + 新建</div></div></div>';
+    return;
+  }
+  const sorted=[...data.memos].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  let html='<div class="memo-wrap"><div class="memo-list">';
+  sorted.forEach(m=>{
+    const preview=(m.content||'').replace(/<[^>]+>/g,'').slice(0,120);
+    const d=new Date(m.updatedAt||m.createdAt);
+    const dt=d.getMonth()+1+'/'+(d.getDate());
+    html+='<div class="memo-card" onclick="openMemoSheet(\''+m.id+'\')">'+
+      '<div class="memo-card-title">'+escHtml(m.title||'无标题')+'</div>'+
+      '<div class="memo-card-preview">'+escHtml(preview)+'</div>'+
+      '<div class="memo-card-date">'+dt+'</div>'+
+      '</div>';
+  });
+  html+='</div></div>';
+  el.innerHTML=html;
+}
+function openMemoSheet(id){
+  if(id){selectedMemoId=id;} else {
+    const now=Date.now();
+    const m={id:genId(),title:'',content:'',createdAt:now,updatedAt:now};
+    if(!data.memos)data.memos=[];
+    data.memos.push(m);
+    selectedMemoId=m.id;
+    saveData();
+  }
+  const m=data.memos.find(x=>x.id===selectedMemoId);
+  if(!m){closeMemoSheet();return;}
+  document.getElementById('memoTitleInput').value=m.title||'';
+  document.getElementById('memoContentInput').value=m.content||'';
+  const d=new Date(m.updatedAt||m.createdAt);
+  document.getElementById('memoDateMeta').textContent='修改于 '+d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate();
+  document.getElementById('memoSheetOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('memoSheet').classList.add('show'),10);
+}
+function closeMemoSheet(){
+  document.getElementById('memoSheet').classList.remove('show');
+  setTimeout(()=>{
+    document.getElementById('memoSheetOverlay').classList.remove('show');
+    renderMemo();
+  },300);
+}
+function autoSaveMemo(){
+  if(_memoTimer) clearTimeout(_memoTimer);
+  _memoTimer=setTimeout(()=>{
+    const m=data.memos.find(x=>x.id===selectedMemoId);
+    if(!m)return;
+    m.title=document.getElementById('memoTitleInput').value;
+    m.content=document.getElementById('memoContentInput').value;
+    m.updatedAt=Date.now();
+    saveData();
+  },500);
+}
+function deleteMemo(){
+  if(!selectedMemoId)return;
+  if(!confirm('确定删除这条备忘录？'))return;
+  data.memos=data.memos.filter(x=>x.id!==selectedMemoId);
+  saveData();
+  selectedMemoId=null;
+  closeMemoSheet();
+}
+function addMemo(){
+  openMemoSheet(null);
+}
+// FAB for memo view
+const _origUpdateFab=updateFab;
+
 // ===== RENDER ALL =====
 function renderAll(){renderSidebar();renderTasks();}
 
 // ===== INIT =====
 renderSidebar();
-switchView('today');
+switchView('inbox');
 </script>
 </body>
 </html>
