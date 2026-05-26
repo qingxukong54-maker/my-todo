@@ -472,16 +472,22 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
 // ===== DATA LAYER =====
 const STORAGE_KEY = 'my_todo_app_v2';
 const CLOUD_KEY = 'todo_cloud_config';
-const defaultData = () => ({
-  tasks:[], lists:[
-    {id:'list_default',name:'默认清单',color:'#4F6EF7'},
-    {id:'list_japan',name:'日本站运营',color:'#F97316'},
-    {id:'list_marriage',name:'跨国婚恋运营',color:'#EC4899'},
-    {id:'list_bandan',name:'搬单业务运营',color:'#A855F7'},
-    {id:'list_daily',name:'日常生活',color:'#22C55E'}
-  ],
-  habits:[], pomodoro:{sessions:0,today:''}, settings:{theme:'light'}, version:2
-});
+const defaultData = () => {
+  return {
+    tasks: [],
+    lists: [
+      {id:'list_default',name:'默认清单',color:'#4F6EF7'},
+      {id:'list_japan',name:'日本站运营',color:'#F97316'},
+      {id:'list_marriage',name:'跨国婚恋运营',color:'#EC4899'},
+      {id:'list_bandan',name:'搬单业务运营',color:'#A855F7'},
+      {id:'list_daily',name:'日常生活',color:'#22C55E'}
+    ],
+    habits: [],
+    pomodoro: { sessions:0, today:'' },
+    settings: { theme:'light' },
+    version: 2
+  };
+};
 
 function loadData(){
   try{ const r=localStorage.getItem(STORAGE_KEY); if(r){const d=JSON.parse(r); if(d.version===2){
@@ -792,16 +798,17 @@ function switchView(view, listId){
   if(isMobile && mTitle) mTitle.textContent = title;
 
   const toolViews=['calendar','pomodoro','habits','stats'];
+  const hideQuickAddViews=['calendar','today','inbox'];
   if(toolViews.includes(view)){
     quickAdd.style.display='none'; header.style.display='none';
-    if(view==='calendar'){calSelectedDate=todayStr();renderCalendar();}
+    if(view==='calendar'){if(!calSelectedDate)calSelectedDate=todayStr();renderCalendar();}
     else if(view==='pomodoro') renderPomodoro();
     else if(view==='habits') renderHabits();
     else if(view==='stats') renderStats();
   } else {
     quickAdd.style.display='flex'; header.style.display='flex';
     renderTasks();
-  }
+  }  // end of switchView
   updateFab();
 }
 
@@ -1327,6 +1334,9 @@ function closeDetailSheet(){
   document.getElementById('detailSheet').classList.remove('show');
   setTimeout(()=>{
     document.getElementById('detailSheetOverlay').classList.remove('show');
+    // After closing, re-render current view to restore state
+    if(currentView==='calendar') renderCalendar();
+    else renderTasks();
   },300);
 }
 
