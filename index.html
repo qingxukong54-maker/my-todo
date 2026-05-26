@@ -868,6 +868,8 @@ function getFilteredTasks(){
 }
 
 function renderTasks(){
+  // 非任务视图（日历/番茄钟/习惯/统计）不渲染任务列表，避免覆盖页面内容
+  if(['calendar','pomodoro','habits','stats'].includes(currentView)) return;
   const tasks=getFilteredTasks(), today=todayStr(), el=document.getElementById('taskList');
   if(!tasks.length){el.innerHTML=`<div class="task-list-empty"><div class="empty-icon">🎉</div><div>没有任务，休息一下吧</div></div>`;renderSidebar();return;}
   const groups={};
