@@ -1293,7 +1293,7 @@ function updateFab(){
   fab.classList.toggle('show',isMobile&&fabViews.includes(currentView));
 }
 function fabAddTask(){
-  // Open detail sheet with empty task for adding
+  // Same as opening detail sheet for a new task — identical behavior to editing
   const now=new Date();
   let defaultDate='';
   if(currentView==='today') defaultDate=todayStr();
@@ -1302,72 +1302,32 @@ function fabAddTask(){
   data.tasks.unshift(newTask);
   saveData();
   selectedTaskId=newTask.id;
-  openDetailSheetForAdd();
+  openDetailSheet();
 }
 
-// Detail sheet for adding new task (with save button)
-function openDetailSheetForAdd(){
-  renderDetailSheetContent();
-  document.getElementById('detailSheetActions').innerHTML=`
-    <button class="btn-cancel" onclick="cancelNewTask()">取消</button>
-    <button class="btn-primary" onclick="saveNewTask()">保存</button>`;
-  document.getElementById('detailSheetOverlay').classList.add('show');
-  setTimeout(()=>document.getElementById('detailSheet').classList.add('show'),10);
+function updateTask(key,val){
+  const t=data.tasks.find(t=>t.id===selectedTaskId); if(!t) return;
+  t[key]=val; saveData(); renderTasks();
 }
 
-function cancelNewTask(){
-  // Remove the empty task
-  if(selectedTaskId){
-    const t=data.tasks.find(t=>t.id===selectedTaskId);
-    if(t&&!t.title.trim()){
-      data.tasks=data.tasks.filter(t=>t.id!==selectedTaskId);
-      saveData();renderTasks();renderCalendar();
-    }
-  }
-  closeDetailSheet();
-}
-
-function saveNewTask(){
-  const t=data.tasks.find(t=>t.id===selectedTaskId);
-  if(t){
-    // Get title from the detail sheet input
-    const titleInput=document.querySelector('#detailSheetBody .detail-title-input');
-    if(titleInput) t.title=titleInput.value.trim();
-    if(!t.title){
-      data.tasks=data.tasks.filter(t=>t.id!==selectedTaskId);
-    }
-    saveData(); renderTasks(); renderCalendar();
-  }
-  closeDetailSheet();
-}
-
-// Override openDetailSheet to show "保存" instead of "关闭"
+// ===== DETAIL SHEET (Mobile) =====
 function openDetailSheet(){
   renderDetailSheetContent();
   document.getElementById('detailSheetOverlay').classList.add('show');
   setTimeout(()=>document.getElementById('detailSheet').classList.add('show'),10);
-  // Change button to "保存"
+  // Always show "保存" button
   const actions=document.getElementById('detailSheetActions');
   if(actions){
-    actions.innerHTML=`
-      <button class="btn-primary" onclick="saveDetailAndClose()" id="detailSaveBtn">保存</button>`;
+    actions.innerHTML=`<button class="btn-primary" onclick="saveDetailAndClose()" id="detailSaveBtn">保存</button>`;
   }
-  // Track original state for change detection
   _detailOrigState=JSON.stringify(data.tasks.find(t=>t.id===selectedTaskId)||{});
 }
-function saveDetailAndClose(){
-  closeDetailSheet();
-}
+function saveDetailAndClose(){ closeDetailSheet(); }
 function closeDetailSheet(){
   document.getElementById('detailSheet').classList.remove('show');
-  setTimeout(()=>document.getElementById('detailSheetOverlay').classList.remove('show'),300);
-  // Reset actions to default "关闭" after animation
   setTimeout(()=>{
-    const actions=document.getElementById('detailSheetActions');
-    if(actions&&!actions.querySelector('.btn-cancel')){
-      actions.innerHTML=`<button class="btn-cancel" onclick="closeDetailSheet()">关闭</button>`;
-    }
-  },350);
+    document.getElementById('detailSheetOverlay').classList.remove('show');
+  },300);
 }
 
 // ===== POMODORO =====
