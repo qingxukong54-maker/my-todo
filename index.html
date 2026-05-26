@@ -304,7 +304,17 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
 .detail-sheet-actions{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border);}
 .detail-sheet-actions button{flex:1;padding:10px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;}
 
-/* Sync indicator */
+/* Memo sheet - desktop: slide from right */
+@media(min-width:769px){
+  #memoSheetOverlay{display:none!important;}
+  #memoSheet{
+    position:fixed;top:0;right:0;bottom:0;left:auto;width:420px;max-height:100vh;
+    border-radius:0;box-shadow:-4px 0 24px rgba(0,0,0,.15);transform:translateX(100%);
+    padding-bottom:0;z-index:200;
+  }
+  #memoSheet.show{transform:translateX(0);}
+  #memoSheet .detail-sheet-handle{display:none;}
+}
 .sync-indicator{font-size:11px;color:var(--text3);padding:0 12px 8px;display:flex;align-items:center;gap:4px;}
 .sync-indicator.syncing{color:var(--primary);}
 .sync-indicator .dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;}
@@ -478,7 +488,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
     <h3>备忘录</h3>
     <button style="font-size:20px;color:var(--red);padding:4px 8px;" onclick="deleteMemo()">🗑️</button>
   </div>
-  <div class="detail-sheet-body" id="memoSheetBody" style="padding:16px;">
+  <div class="detail-sheet-body" id="memoSheetBody">
     <input class="memo-detail-title" id="memoTitleInput" placeholder="标题" oninput="autoSaveMemo()">
     <div class="memo-detail-meta" id="memoDateMeta"></div>
     <textarea class="memo-detail-body" id="memoContentInput" placeholder="写点什么..." oninput="autoSaveMemo()"></textarea>
@@ -869,10 +879,6 @@ function mobileTabClick(view){
 }
 
 function showMobileMoreModal(){
-  const listItems = data.lists.map(l=>`
-    <div class="nav-item" onclick="closeModal();switchView('list','${l.id}');" style="border-radius:var(--radius-sm);padding:12px;">
-      <span class="list-dot" style="background:${l.color}"></span><span>${escHtml(l.name)}</span>
-    </div>`).join('');
   document.getElementById('modalContainer').innerHTML = `
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal">
@@ -885,8 +891,6 @@ function showMobileMoreModal(){
           <div class="nav-item" onclick="closeModal();manualSync();" style="padding:12px;"><span class="icon">🔄</span><span>手动同步</span></div>
           <div class="nav-item" onclick="closeModal();exportData();" style="padding:12px;"><span class="icon">📤</span><span>导出数据</span></div>
           <div class="nav-item" onclick="closeModal();importData();" style="padding:12px;"><span class="icon">📥</span><span>导入数据</span></div>
-          <div class="nav-item" onclick="closeModal();showAddListModal();" style="padding:12px;color:var(--primary);"><span class="icon">＋</span><span>新建清单</span></div>
-          ${listItems}
         </div>
       </div>
     </div>`;
@@ -1361,15 +1365,14 @@ function updateFab(){
 }
 function fabAddTask(){
   if(currentView==='memo'){addMemo();return;}
-  
-  // Same as opening detail sheet for a new task — identical behavior to editing
+
+  // 新建任务：先不保存，打开详情页，关闭时检查空内容再决定
   const now=new Date();
   let defaultDate='';
   if(currentView==='today') defaultDate=todayStr();
   const newTask={id:genId(),title:'',done:false,listId:currentListId||data.lists[0]?.id||'',
     date:defaultDate,priority:'none',tags:[],subtasks:[],notes:'',createdAt:Date.now()};
   data.tasks.unshift(newTask);
-  saveData();
   selectedTaskId=newTask.id;
   openDetailSheet();
 }
@@ -1393,10 +1396,12 @@ function openDetailSheet(){
 }
 function saveDetailAndClose(){ closeDetailSheet(); }
 function closeDetailSheet(){
+  const t=data.tasks.find(t=>t.id===selectedTaskId);
+  // 标题为空 → 删除该任务，不保存
+  if(t&&!t.title.trim()){data.tasks=data.tasks.filter(x=>x.id!==selectedTaskId);saveData();selectedTaskId=null;}
   document.getElementById('detailSheet').classList.remove('show');
   setTimeout(()=>{
     document.getElementById('detailSheetOverlay').classList.remove('show');
-    // After closing, re-render current view to restore state
     if(currentView==='calendar') renderCalendar();
     else renderTasks();
   },300);
@@ -1592,6 +1597,9 @@ function openMemoSheet(id){
   setTimeout(()=>document.getElementById('memoSheet').classList.add('show'),10);
 }
 function closeMemoSheet(){
+  const m=data.memos?.find(x=>x.id===selectedMemoId);
+  // 标题和内容都为空 → 删除，不保存
+  if(m&&!m.title.trim()&&!m.content.trim()){data.memos=data.memos.filter(x=>x.id!==selectedMemoId);saveData();selectedMemoId=null;}
   document.getElementById('memoSheet').classList.remove('show');
   setTimeout(()=>{
     document.getElementById('memoSheetOverlay').classList.remove('show');
@@ -1605,7 +1613,9 @@ function autoSaveMemo(){
     if(!m)return;
     m.title=document.getElementById('memoTitleInput').value;
     m.content=document.getElementById('memoContentInput').value;
-    m.updatedAt=Date.now();
+    // 标题和内容都为空 → 删除这条 memo，不保存
+    if(!m.title.trim()&&!m.content.trim()){data.memos=data.memos.filter(x=>x.id!==selectedMemoId);selectedMemoId=null;}
+    else { m.updatedAt=Date.now(); }
     saveData();
   },500);
 }
