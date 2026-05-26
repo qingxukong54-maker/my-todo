@@ -808,7 +808,8 @@ function switchView(view, listId){
   } else {
     quickAdd.style.display='flex'; header.style.display='flex';
     renderTasks();
-  }  // end of switchView
+  }
+  if(hideQuickAddViews.includes(view)) quickAdd.style.display='none';
   updateFab();
 }
 
