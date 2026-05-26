@@ -417,12 +417,26 @@ input:focus,textarea:focus,select:focus{border-color:var(--primary);}
 const STORAGE_KEY = 'my_todo_app_v2';
 const CLOUD_KEY = 'todo_cloud_config';
 const defaultData = () => ({
-  tasks:[], lists:[{id:'list_default',name:'默认清单',color:'#4F6EF7'}],
+  tasks:[], lists:[
+    {id:'list_default',name:'默认清单',color:'#4F6EF7'},
+    {id:'list_japan',name:'日本站运营',color:'#F97316'},
+    {id:'list_marriage',name:'跨国婚恋运营',color:'#EC4899'},
+    {id:'list_bandan',name:'搬单业务运营',color:'#A855F7'},
+    {id:'list_daily',name:'日常生活',color:'#22C55E'}
+  ],
   habits:[], pomodoro:{sessions:0,today:''}, settings:{theme:'light'}, version:2
 });
 
 function loadData(){
-  try{ const r=localStorage.getItem(STORAGE_KEY); if(r){const d=JSON.parse(r); if(d.version===2) return d;} }catch(e){}
+  try{ const r=localStorage.getItem(STORAGE_KEY); if(r){const d=JSON.parse(r); if(d.version===2){
+    // Migrate: add new default lists if missing
+    const defaultLists = defaultData().lists;
+    const existIds = new Set(d.lists.map(l=>l.id));
+    defaultLists.forEach(dl=>{
+      if(!existIds.has(dl.id)) d.lists.push(dl);
+    });
+    return d;
+  }} }catch(e){}
   return defaultData();
 }
 function saveData(){
@@ -768,7 +782,7 @@ function getFilteredTasks(){
   const weekEndStr=weekEnd.toISOString().slice(0,10);
   let tasks=[...data.tasks];
   switch(currentView){
-    case 'inbox': tasks=tasks.filter(t=>!t.done&&!t.date); break;
+    case 'inbox': tasks=tasks.filter(t=>!t.date); break;
     case 'today': tasks=tasks.filter(t=>t.date===today); break;
     case 'week': tasks=tasks.filter(t=>t.date&&t.date>=today&&t.date<=weekEndStr); break;
     case 'list': tasks=tasks.filter(t=>t.listId===currentListId); break;
